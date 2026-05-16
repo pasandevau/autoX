@@ -1,4 +1,5 @@
 /* Inline SVG illustrations for blog card headers — one per category */
+import React from "react";
 
 export function MaintenanceIllustration() {
   return (
@@ -318,7 +319,7 @@ export function DIYTipsIllustration() {
   );
 }
 
-export const categoryIllustrations: Record<string, () => JSX.Element> = {
+export const categoryIllustrations: Record<string, () => React.ReactElement> = {
   Maintenance:   MaintenanceIllustration,
   Safety:        SafetyIllustration,
   Industry:      IndustryIllustration,
