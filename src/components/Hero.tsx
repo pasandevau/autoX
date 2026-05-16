@@ -2,10 +2,10 @@
 
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
-  Phone, ArrowRight, CheckCircle, Star, ChevronDown,
-  Send, Zap, MapPin, Clock, Shield,
+  Phone, ArrowRight, Star, CheckCircle,
+  Send, Zap, MapPin, Clock, Shield, Loader2,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 /* ─── Carousel images ─────────────────────────────────────────── */
 const slides = [
@@ -57,8 +57,8 @@ const item: Variants = {
 /* ═══════════════════════════════════════════════════════════════ */
 export default function Hero() {
   const [current, setCurrent] = useState(0);
-  const [form, setForm] = useState({ service: "", suburb: "", phone: "" });
-  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm]       = useState({ name: "", phone: "", service: "", suburb: "" });
+  const [callStatus, setCallStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), []);
 
@@ -70,9 +70,27 @@ export default function Hero() {
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setCallStatus("loading");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "callback",
+          name: form.name,
+          phone: form.phone,
+          service: form.service,
+          suburb: form.suburb,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) setCallStatus("error");
+      else setCallStatus("success");
+    } catch {
+      setCallStatus("error");
+    }
   }
 
   return (
@@ -281,39 +299,58 @@ export default function Hero() {
                   </p>
                 </div>
 
-                {submitted ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="px-7 py-10 flex flex-col items-center text-center gap-4"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-[#FFB300]/20 border border-[#FFB300]/30 flex items-center justify-center">
-                      <CheckCircle size={30} className="text-[#FFB300]" />
-                    </div>
-                    <h3 className="text-xl font-extrabold text-white">Request Sent!</h3>
-                    <p className="text-white/55 text-sm font-medium leading-relaxed">
-                      We'll call you back within the hour. For immediate help:
-                    </p>
-                    <a
-                      href="tel:1300096616"
-                      className="flex items-center gap-2 btn-brand text-[#1A1A2E] px-6 py-3.5 rounded-xl font-extrabold w-full justify-center"
+                  {callStatus === "success" ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="px-7 py-8 flex flex-col items-center text-center gap-4"
                     >
-                      <Phone size={18} />
-                      Call 1300 09 66 16
-                    </a>
-                  </motion.div>
-                ) : (
+                      <div className="w-16 h-16 rounded-full bg-[#FFB300]/20 flex items-center justify-center">
+                        <CheckCircle size={32} className="text-[#FFB300]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-extrabold text-white mb-1">We&apos;ll Call You Shortly!</h3>
+                        <p className="text-white/55 text-sm font-medium leading-relaxed">
+                          Thanks {form.name}! Your callback request has been received.<br />
+                          We&apos;ll ring <span className="text-[#FFB300] font-bold">{form.phone}</span> within the hour.
+                        </p>
+                      </div>
+                      <a href="tel:1300096616"
+                        className="flex items-center gap-2 border border-white/20 text-white px-6 py-3 rounded-xl font-extrabold text-sm hover:border-[#FFB300]/50 hover:text-[#FFB300] transition-all mt-1">
+                        <Phone size={16} /> Can&apos;t wait? Call us now
+                      </a>
+                    </motion.div>
+                  ) : (
                   <form onSubmit={handleSubmit} className="px-7 py-6 flex flex-col gap-4">
+                    {/* Name */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">Your Name</label>
+                      <input
+                        type="text" name="name" value={form.name} onChange={handleChange} required
+                        placeholder="e.g. Sarah Johnson"
+                        className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FFB300]/60 transition-all"
+                        style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.15)" }}
+                      />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">Your Phone Number</label>
+                      <div className="relative">
+                        <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFB300]" />
+                        <input
+                          type="tel" name="phone" value={form.phone} onChange={handleChange} required
+                          placeholder="04XX XXX XXX"
+                          className="w-full pl-9 pr-4 py-3 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FFB300]/60 transition-all"
+                          style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.15)" }}
+                        />
+                      </div>
+                    </div>
+
                     {/* Service */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">
-                        Service Needed
-                      </label>
-                      <select
-                        name="service"
-                        value={form.service}
-                        onChange={handleChange}
-                        required
+                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">Service Needed</label>
+                      <select name="service" value={form.service} onChange={handleChange} required
                         className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#FFB300]/60 transition-all appearance-none"
                         style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.15)" }}
                       >
@@ -326,17 +363,11 @@ export default function Hero() {
 
                     {/* Suburb */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">
-                        Your Suburb
-                      </label>
+                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">Your Suburb</label>
                       <div className="relative">
                         <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFB300]" />
                         <input
-                          type="text"
-                          name="suburb"
-                          value={form.suburb}
-                          onChange={handleChange}
-                          required
+                          type="text" name="suburb" value={form.suburb} onChange={handleChange}
                           placeholder="e.g. Norwood, Marion, Prospect…"
                           className="w-full pl-9 pr-4 py-3 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FFB300]/60 transition-all"
                           style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.15)" }}
@@ -344,58 +375,37 @@ export default function Hero() {
                       </div>
                     </div>
 
-                    {/* Phone */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-white/50 uppercase tracking-widest">
-                        Your Phone Number
-                      </label>
-                      <div className="relative">
-                        <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFB300]" />
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={form.phone}
-                          onChange={handleChange}
-                          required
-                          placeholder="04XX XXX XXX"
-                          className="w-full pl-9 pr-4 py-3 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FFB300]/60 transition-all"
-                          style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.15)" }}
-                        />
-                      </div>
-                    </div>
+                    {callStatus === "error" && (
+                      <p className="text-red-400 text-xs font-semibold text-center">Something went wrong — please try again or call us directly.</p>
+                    )}
 
                     {/* Submit */}
-                    <motion.button
-                      type="submit"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      className="flex items-center justify-center gap-2.5 btn-brand text-[#1A1A2E] py-4 rounded-xl font-extrabold text-base w-full mt-1"
+                    <motion.button type="submit" disabled={callStatus === "loading"}
+                      whileHover={callStatus !== "loading" ? { scale: 1.02 } : {}}
+                      whileTap={callStatus !== "loading" ? { scale: 0.97 } : {}}
+                      className="flex items-center justify-center gap-2.5 btn-brand text-[#1A1A2E] py-4 rounded-xl font-extrabold text-base w-full mt-1 disabled:opacity-70"
                     >
-                      <Send size={17} />
-                      Request Callback — We'll Call You
+                      {callStatus === "loading"
+                        ? <><Loader2 size={17} className="animate-spin" /> Sending…</>
+                        : <><Send size={17} /> Request Callback — We&apos;ll Call You</>}
                     </motion.button>
 
-                    {/* Divider */}
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-px bg-white/10" />
                       <span className="text-white/35 text-xs font-semibold">or call us directly</span>
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
 
-                    {/* Direct call */}
-                    <a
-                      href="tel:1300096616"
-                      className="flex items-center justify-center gap-2.5 border border-white/20 text-white py-3.5 rounded-xl font-extrabold text-base hover:border-[#FFB300]/50 hover:text-[#FFB300] transition-all"
-                    >
-                      <Phone size={18} />
-                      1300 09 66 16
+                    <a href="tel:1300096616"
+                      className="flex items-center justify-center gap-2.5 border border-white/20 text-white py-3.5 rounded-xl font-extrabold text-base hover:border-[#FFB300]/50 hover:text-[#FFB300] transition-all">
+                      <Phone size={18} />1300 09 66 16
                     </a>
 
                     <p className="text-center text-[11px] text-white/30 font-medium -mt-1">
                       Available 24/7 · Same day in most cases · No lock-in
                     </p>
                   </form>
-                )}
+                  )}
               </div>
             </motion.div>
 

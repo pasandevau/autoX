@@ -4,15 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { posts } from "@/data/blog";
 import { Clock, ArrowRight } from "lucide-react";
-
-const categoryIcons: Record<string, string> = {
-  Maintenance: "🔧",
-  Safety: "🛡️",
-  Industry: "🚗",
-  Breakdowns: "⚡",
-  "Buying Tips": "🔍",
-  "DIY Tips": "💡",
-};
+import { categoryIllustrations } from "@/components/BlogIllustrations";
 
 export default function BlogPreview() {
   const featured = posts.slice(0, 3);
@@ -65,9 +57,9 @@ export default function BlogPreview() {
                   <motion.div
                     animate={{ y: [0, -5, 0] }}
                     transition={{ repeat: Infinity, duration: 3 + i, ease: "easeInOut" }}
-                    className="text-5xl"
+                    className="w-full h-full flex items-center justify-center px-6"
                   >
-                    {categoryIcons[post.category] || "🚗"}
+                    {(() => { const Illus = categoryIllustrations[post.category]; return Illus ? <Illus /> : null; })()}
                   </motion.div>
                   <div className="absolute top-3 left-3">
                     <span

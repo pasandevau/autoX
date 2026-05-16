@@ -8,25 +8,17 @@ import Footer from "@/components/Footer";
 import PageHero from "@/components/PageHero";
 import { posts } from "@/data/blog";
 import { Clock, ArrowRight } from "lucide-react";
+import { categoryIllustrations } from "@/components/BlogIllustrations";
 
 const categories = ["All", "Maintenance", "Safety", "Industry", "Breakdowns", "Buying Tips", "DIY Tips"];
 
 const categoryGradients: Record<string, string> = {
-  Maintenance: "from-[#FFB300]/20 to-[#FF8C00]/10",
-  Safety: "from-[#FF8C00]/20 to-[#FFB300]/10",
-  Industry: "from-[#FFB300]/15 to-[#1A1A2E]/5",
-  Breakdowns: "from-[#FF8C00]/15 to-[#FFB300]/8",
+  Maintenance:   "from-[#FFB300]/20 to-[#FF8C00]/10",
+  Safety:        "from-[#FF8C00]/20 to-[#FFB300]/10",
+  Industry:      "from-[#FFB300]/15 to-[#1A1A2E]/5",
+  Breakdowns:    "from-[#FF8C00]/15 to-[#FFB300]/8",
   "Buying Tips": "from-[#FFB300]/20 to-[#FF8C00]/10",
-  "DIY Tips": "from-[#FF8C00]/20 to-[#FFB300]/10",
-};
-
-const categoryIcons: Record<string, string> = {
-  Maintenance: "🔧",
-  Safety: "🛡️",
-  Industry: "🚗",
-  Breakdowns: "⚡",
-  "Buying Tips": "🔍",
-  "DIY Tips": "💡",
+  "DIY Tips":    "from-[#FF8C00]/20 to-[#FFB300]/10",
 };
 
 export default function BlogPage() {
@@ -96,9 +88,9 @@ export default function BlogPage() {
                       <motion.div
                         animate={{ y: [0, -6, 0] }}
                         transition={{ repeat: Infinity, duration: 3 + i * 0.5, ease: "easeInOut" }}
-                        className="text-6xl"
+                        className="w-full h-full flex items-center justify-center px-8"
                       >
-                        {categoryIcons[post.category] || "🚗"}
+                        {(() => { const Illus = categoryIllustrations[post.category]; return Illus ? <Illus /> : null; })()}
                       </motion.div>
                       <div className="absolute top-4 left-4">
                         <span

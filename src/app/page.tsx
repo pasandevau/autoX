@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import MarqueeBanner from "@/components/MarqueeBanner";
 import ServicesGrid from "@/components/ServicesGrid";
+import MobileServiceShowcase from "@/components/MobileServiceShowcase";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import HowItWorks from "@/components/HowItWorks";
 import RoadsideSection from "@/components/RoadsideSection";
@@ -19,6 +20,7 @@ export default function Home() {
         <Hero />
         <MarqueeBanner />
         <ServicesGrid />
+        <MobileServiceShowcase />
         <WhyChooseUs />
         <HowItWorks />
         <RoadsideSection />
