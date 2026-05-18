@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Users, Tag, Link2, Calendar, Phone, Mail,
-  MapPin, Clock, Plus, Trash2, Edit3, Check, X, ExternalLink,
-  TrendingUp, ChevronRight, Globe, Share2, Loader2,
+  MapPin, Clock, Plus, Trash2, Check, ExternalLink,
+  TrendingUp, ChevronRight, Globe, Share2, Loader2, BarChart2,
+  MousePointer, Eye, Timer, Smartphone, Monitor, Tablet,
 } from "lucide-react";
 
-type Tab = "overview" | "customers" | "promotions" | "social";
+type Tab = "overview" | "customers" | "promotions" | "social" | "analytics";
 
 interface Booking {
   id: string; created_at: string; first_name: string; last_name: string;
@@ -27,6 +28,14 @@ interface Promo {
   id: string; created_at: string; title: string; description: string;
   cta_text: string; cta_link: string; badge: string; active: boolean;
   expires_at: string | null;
+}
+
+interface AnalyticsData {
+  overview: { activeUsers: number; sessions: number; pageViews: number; engagementRate: number; avgSessionDuration: number; bounceRate: number };
+  dailyUsers: { date: string; users: number; sessions: number }[];
+  topPages: { path: string; title: string; views: number; users: number }[];
+  devices: { device: string; users: number }[];
+  sources: { channel: string; sessions: number; users: number }[];
 }
 
 const socialLinks = [
@@ -62,6 +71,9 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
   const [loading, setLoading] = useState(true);
 
   // Add customer form
@@ -87,7 +99,20 @@ export default function AdminPage() {
     setLoading(false);
   }
 
+  async function loadAnalytics() {
+    setAnalyticsLoading(true);
+    setAnalyticsError("");
+    try {
+      const res = await fetch("/api/admin/analytics");
+      const data = await res.json();
+      if (data.error) { setAnalyticsError(data.error); }
+      else { setAnalytics(data); }
+    } catch { setAnalyticsError("Failed to load analytics."); }
+    setAnalyticsLoading(false);
+  }
+
   useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (tab === "analytics" && !analytics) loadAnalytics(); }, [tab]);
 
   async function addCustomer() {
     if (!customerForm.name || !customerForm.phone) return;
@@ -126,6 +151,7 @@ export default function AdminPage() {
 
   const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "analytics", label: "Analytics", icon: BarChart2 },
     { id: "customers", label: "Customers", icon: Users },
     { id: "promotions", label: "Promotions", icon: Tag },
     { id: "social", label: "Quick Links", icon: Link2 },
@@ -244,6 +270,174 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ANALYTICS */}
+              {tab === "analytics" && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h1 className="text-2xl font-extrabold text-[#1A1A2E] mb-1">Analytics</h1>
+                      <p className="text-[#1A1A2E]/45 font-medium text-sm">Last 28 days — powered by Google Analytics</p>
+                    </div>
+                    <button onClick={loadAnalytics} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 text-sm font-bold text-[#1A1A2E]/60 hover:bg-[#F8F8F8]">
+                      Refresh
+                    </button>
+                  </div>
+
+                  {analyticsLoading && (
+                    <div className="flex items-center justify-center h-64">
+                      <Loader2 size={28} className="animate-spin text-[#FFB300]" />
+                    </div>
+                  )}
+
+                  {analyticsError && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                      <p className="text-red-600 font-bold mb-2">Could not load analytics</p>
+                      <p className="text-red-500 text-sm mb-4">{analyticsError}</p>
+                      <p className="text-[#1A1A2E]/50 text-xs">You may need to re-authorise at <a href="/api/auth/google" className="text-[#FF8C00] font-bold underline">/api/auth/google</a> with the new analytics scope, then update the refresh token in Netlify.</p>
+                    </div>
+                  )}
+
+                  {analytics && !analyticsLoading && (() => {
+                    const { overview, dailyUsers, topPages, devices, sources } = analytics;
+                    const maxUsers = Math.max(...dailyUsers.map(d => d.users), 1);
+                    const maxViews = Math.max(...topPages.map(p => p.views), 1);
+                    const totalDeviceUsers = devices.reduce((s, d) => s + d.users, 0) || 1;
+                    const totalSourceSessions = sources.reduce((s, d) => s + d.sessions, 0) || 1;
+                    const deviceIcon = (d: string) => d === "mobile" ? Smartphone : d === "tablet" ? Tablet : Monitor;
+                    const fmt = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : n.toString();
+                    const fmtDuration = (s: number) => `${Math.floor(s/60)}m ${Math.round(s%60)}s`;
+                    const fmtDate = (d: string) => `${d.slice(4,6)}/${d.slice(6,8)}`;
+
+                    return (
+                      <div className="space-y-6">
+                        {/* Overview stats */}
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                          {[
+                            { label: "Active Users", value: fmt(overview.activeUsers), icon: Users, color: "#FFB300", sub: "28 days" },
+                            { label: "Sessions", value: fmt(overview.sessions), icon: MousePointer, color: "#FF8C00", sub: "28 days" },
+                            { label: "Page Views", value: fmt(overview.pageViews), icon: Eye, color: "#FFB300", sub: "28 days" },
+                            { label: "Engagement Rate", value: `${(overview.engagementRate * 100).toFixed(1)}%`, icon: TrendingUp, color: "#FF8C00", sub: "Engaged sessions" },
+                            { label: "Avg. Session", value: fmtDuration(overview.avgSessionDuration), icon: Timer, color: "#FFB300", sub: "Duration" },
+                            { label: "Bounce Rate", value: `${(overview.bounceRate * 100).toFixed(1)}%`, icon: BarChart2, color: "#FF8C00", sub: "Single-page sessions" },
+                          ].map((s) => (
+                            <div key={s.label} className="bg-white rounded-2xl p-5 border border-black/[0.05]">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${s.color}18` }}>
+                                <s.icon size={16} style={{ color: s.color }} />
+                              </div>
+                              <div className="text-2xl font-black text-[#1A1A2E] mb-0.5">{s.value}</div>
+                              <div className="text-sm font-bold text-[#1A1A2E]/70">{s.label}</div>
+                              <div className="text-xs text-[#1A1A2E]/35 font-medium">{s.sub}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Daily users chart */}
+                        <div className="bg-white rounded-2xl border border-black/[0.05] p-6">
+                          <h2 className="font-extrabold text-[#1A1A2E] mb-1">Visitors — Last 30 Days</h2>
+                          <p className="text-xs text-[#1A1A2E]/40 font-medium mb-5">Daily active users</p>
+                          <div className="flex items-end gap-1 h-40">
+                            {dailyUsers.map((d, i) => (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                                <div className="absolute bottom-full mb-1 bg-[#1A1A2E] text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {fmtDate(d.date)}: {d.users} users
+                                </div>
+                                <div
+                                  className="w-full rounded-t-sm transition-all"
+                                  style={{
+                                    height: `${Math.max((d.users / maxUsers) * 100, 2)}%`,
+                                    background: `linear-gradient(to top, #FFB300, #FF8C00)`,
+                                    opacity: 0.7 + (d.users / maxUsers) * 0.3,
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex justify-between mt-2 text-[10px] text-[#1A1A2E]/30 font-medium">
+                            <span>{dailyUsers[0] ? fmtDate(dailyUsers[0].date) : ""}</span>
+                            <span>{dailyUsers[Math.floor(dailyUsers.length/2)] ? fmtDate(dailyUsers[Math.floor(dailyUsers.length/2)].date) : ""}</span>
+                            <span>{dailyUsers[dailyUsers.length-1] ? fmtDate(dailyUsers[dailyUsers.length-1].date) : ""}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Top pages */}
+                          <div className="bg-white rounded-2xl border border-black/[0.05] p-6">
+                            <h2 className="font-extrabold text-[#1A1A2E] mb-1">Top Pages</h2>
+                            <p className="text-xs text-[#1A1A2E]/40 font-medium mb-4">Most viewed pages — 28 days</p>
+                            <div className="space-y-3">
+                              {topPages.slice(0, 8).map((p, i) => (
+                                <div key={i}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-bold text-[#1A1A2E] truncate max-w-[65%]">{p.path === "/" ? "Home" : p.path}</span>
+                                    <span className="text-xs font-extrabold text-[#FF8C00]">{fmt(p.views)}</span>
+                                  </div>
+                                  <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: `${(p.views / maxViews) * 100}%`, background: "linear-gradient(90deg,#FFB300,#FF8C00)" }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Devices + Sources */}
+                          <div className="space-y-6">
+                            {/* Device breakdown */}
+                            <div className="bg-white rounded-2xl border border-black/[0.05] p-6">
+                              <h2 className="font-extrabold text-[#1A1A2E] mb-4">Devices</h2>
+                              <div className="space-y-3">
+                                {devices.map((d) => {
+                                  const Icon = deviceIcon(d.device);
+                                  const pct = Math.round((d.users / totalDeviceUsers) * 100);
+                                  return (
+                                    <div key={d.device} className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-xl bg-[#FFB300]/10 flex items-center justify-center flex-shrink-0">
+                                        <Icon size={14} className="text-[#FF8C00]" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                          <span className="text-xs font-bold text-[#1A1A2E] capitalize">{d.device}</span>
+                                          <span className="text-xs font-extrabold text-[#FF8C00]">{pct}%</span>
+                                        </div>
+                                        <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#FFB300,#FF8C00)" }} />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Traffic sources */}
+                            <div className="bg-white rounded-2xl border border-black/[0.05] p-6">
+                              <h2 className="font-extrabold text-[#1A1A2E] mb-4">Traffic Sources</h2>
+                              <div className="space-y-2.5">
+                                {sources.map((s) => {
+                                  const pct = Math.round((s.sessions / totalSourceSessions) * 100);
+                                  return (
+                                    <div key={s.channel} className="flex items-center gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between mb-1">
+                                          <span className="text-xs font-bold text-[#1A1A2E] truncate">{s.channel || "Direct"}</span>
+                                          <span className="text-xs font-extrabold text-[#FF8C00] flex-shrink-0 ml-2">{pct}%</span>
+                                        </div>
+                                        <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#FFB300,#FF8C00)" }} />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
