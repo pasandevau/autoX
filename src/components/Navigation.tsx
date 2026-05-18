@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
   Phone, Menu, X, Wrench, ChevronDown,
-  Settings, Truck, Car, Shield, ClipboardCheck, AlertTriangle,
+  Settings, Truck, Car, Shield, ClipboardCheck, AlertTriangle, Users,
 } from "lucide-react";
 
 const services = [
@@ -16,9 +16,11 @@ const services = [
   { href: "/services/safety-checks", label: "Safety & Roadworthy", icon: Shield, desc: "SA roadworthy certificates" },
   { href: "/services/pre-purchase", label: "Pre-Purchase Inspections", icon: ClipboardCheck, desc: "Buy with confidence" },
   { href: "/services/roadside-assistance", label: "24/7 Roadside Assistance", icon: AlertTriangle, desc: "Emergency help, day or night" },
+  { href: "/ndis-fleet", label: "NDIS Fleet Management", icon: Users, desc: "Safety checks & compliance reports", highlight: true },
 ];
 
 const mainLinks = [
+  { href: "/ndis-fleet", label: "NDIS Fleet" },
   { href: "/about", label: "About" },
   { href: "/blog", label: "Blog" },
   { href: "/insights", label: "Insights" },
@@ -108,14 +110,21 @@ export default function Navigation() {
                             key={s.href}
                             href={s.href}
                             onClick={() => setServicesOpen(false)}
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#FFB300]/8 group/item transition-colors"
+                            className={`flex items-center gap-3 p-3 rounded-xl group/item transition-colors ${
+                              s.highlight
+                                ? "bg-[#FFB300]/10 hover:bg-[#FFB300]/18 border border-[#FFB300]/20"
+                                : "hover:bg-[#FFB300]/8"
+                            }`}
                           >
-                            <div className="w-9 h-9 rounded-lg bg-[#FFB300]/12 flex items-center justify-center flex-shrink-0 group-hover/item:bg-[#FFB300]/22 transition-colors">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                              s.highlight ? "bg-[#FFB300]/25 group-hover/item:bg-[#FFB300]/35" : "bg-[#FFB300]/12 group-hover/item:bg-[#FFB300]/22"
+                            }`}>
                               <s.icon size={15} className="text-[#FF8C00]" />
                             </div>
                             <div>
                               <div className="text-sm font-bold text-[#1A1A2E] group-hover/item:text-[#FF8C00] transition-colors leading-tight">
                                 {s.label}
+                                {s.highlight && <span className="ml-2 text-[9px] font-extrabold tracking-widest uppercase text-[#FF8C00] bg-[#FFB300]/15 px-1.5 py-0.5 rounded-full">NEW</span>}
                               </div>
                               <div className="text-xs text-[#1A1A2E]/40 font-medium mt-0.5">{s.desc}</div>
                             </div>

@@ -21,7 +21,7 @@ const badges = [
   { icon: Shield, label: "Licensed & Insured" },
   { icon: Zap, label: "Same Day Service" },
   { icon: CheckCircle, label: "Fixed Price Quotes" },
-  { icon: Clock, label: "No Call-Out Fee" },
+  { icon: Star, label: "Trusted by Adelaide" },
 ];
 
 /* ─── Stats ────────────────────────────────────────────────────── */
