@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/sendEmail";
 import { customerConfirmationEmail, internalBookingAlert, BookingEmailData } from "@/lib/emailTemplates";
+import { supabase } from "@/lib/supabase";
 
 const TIME_SLOT_MAP: Record<string, { startHour: number; endHour: number }> = {
   "7:00 – 8:00 AM":      { startHour: 7,  endHour: 8  },
@@ -177,6 +178,27 @@ export async function POST(request: NextRequest) {
       emailErrors.push(`internal alert: ${e instanceof Error ? e.message : String(e)}`);
       console.error("[/api/book] Internal alert email failed:", e);
     }
+
+    // Save to Supabase (non-blocking — don't fail the booking if DB write fails)
+    supabase.from("bookings").insert({
+      first_name:     firstName,
+      last_name:      lastName ?? "",
+      email:          email ?? "",
+      phone,
+      service:        serviceName,
+      vehicle_make:   vehicleMake ?? "",
+      vehicle_model:  vehicleModel ?? "",
+      vehicle_year:   vehicleYear ?? "",
+      preferred_date: preferredDate ?? "",
+      preferred_time: preferredTime ?? "Flexible / ASAP",
+      suburb,
+      notes:          notes ?? "",
+      event_id:       response.data.id ?? "",
+      event_link:     response.data.htmlLink ?? "",
+      status:         "confirmed",
+    }).then(({ error }) => {
+      if (error) console.error("[/api/book] Supabase insert failed:", error.message);
+    });
 
     return NextResponse.json({
       success: true,

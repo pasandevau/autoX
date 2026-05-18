@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/sendEmail";
 import { inquiryAlertEmail, callbackAlertEmail } from "@/lib/emailTemplates";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,20 @@ export async function POST(request: NextRequest) {
         html: inquiryAlertEmail({ name, phone, email, service, message }),
       });
     }
+
+    // Save to Supabase (non-blocking)
+    supabase.from("leads").insert({
+      type:    type ?? "inquiry",
+      name,
+      phone,
+      email:   email ?? "",
+      service: service ?? "",
+      suburb:  suburb ?? "",
+      message: message ?? "",
+      status:  "new",
+    }).then(({ error }) => {
+      if (error) console.error("[/api/contact] Supabase insert failed:", error.message);
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
