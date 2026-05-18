@@ -54,7 +54,7 @@ export async function GET() {
           dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
           metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
           orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-          limit: 10,
+          limit: "10",
         },
       }),
 
@@ -76,7 +76,7 @@ export async function GET() {
           dimensions: [{ name: "sessionDefaultChannelGroup" }],
           metrics: [{ name: "sessions" }, { name: "activeUsers" }],
           orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-          limit: 8,
+          limit: "8",
         },
       }),
     ]);
